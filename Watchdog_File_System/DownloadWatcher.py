@@ -6,6 +6,32 @@ from datetime import datetime
 import os
 import time
 
+# common file formats
+common_file_types = {'Audio': ['.aif', '.cda', '.mid', '.midi', '.mp3', '.mpa', '.ogg', '.wav', '.wma', '.wpl'],
+                     'Compressed': ['.7z', '.arj', '.deb', '.pkg', '.rar', '.rpm', '.tar.gz', '.z', '.zip'],
+                     'Disc': ['.bin', '.dmg', '.iso', '.toast', '.vcd'],
+                     'Data': ['.csv', '.dat', '.db', '.dbf', '.log', '.mdb', '.sav', '.sql', '.tar', '.xml'],
+                     'E-mail': ['.email', '.eml', '.emlx', '.msg', '.oft', '.ost', '.pst', '.vcf'],
+                     'Executable': ['.apk', '.bat', '.bin', '.cgi', '.pl', '.com', '.exe', '.gadget', '.jar', '.msi',
+                                    '.py', '.wsf'],
+                     'Font': ['.fnt', '.fon', '.otf', '.ttf'],
+                     'Image': ['.ai', '.bmp', '.gif', '.ico', '.jpeg', '.jpg', '.png', '.ps', '.psd', '.svg', '.tif',
+                               '.tiff'],
+                     'Internet': ['.asp', '.aspx', '.cer', '.cfm', '.cgi', '.pl', '.css', '.htm', '.html', '.js',
+                                  '.jsp',
+                                  '.part',
+                                  '.php', '.py', '.rss', '.xhtml'],
+                     'Presentation': ['.key', '.odp', '.pps', '.ppt', '.pptx'],
+                     'Programming': ['.c', '.class', '.cpp', '.cs', '.h', '.java', '.pl', '.sh', '.swift', '.vb'],
+                     'Spreadsheet': ['.ods', '.xls', '.xlsm', '.xlsx'],
+                     'System': ['.bak', '.cab', '.cfg', '.cpl', '.cur', '.dll', '.dmp', '.drv', '.icns', '.ico', '.ini',
+                                '.lnk', '.msi',
+                                '.sys', '.tmp'],
+                     'Video': ['.3g2', '.3gp', '.avi', '.flv', '.h264', '.m4v', '.mkv', '.mov', '.mp4', '.mpg', '.mpeg',
+                               '.rm', '.swf',
+                               '.vob', '.wmv'],
+                     'Word': ['.doc', '.docx', '.odt', '.pdf', '.rtf', '.tex', '.txt', '.wpd']}
+
 
 # wait's until the file is "complete" if it is downloaded
 def check_file_complete(path):
@@ -37,8 +63,15 @@ def get_file_name_type(file_path):
 
 
 # creates the a folder with the wished name if it dos'nt exists
-def create_folder_if_not_existing(base_path, check_name):
-    wished_path = os.path.join(base_path, check_name)
+def create_folder_if_not_existing(base_path, check_path, check_type):
+    # check what file type it is and set's the relevant folder
+    if check_type:
+        for file_type in common_file_types:
+            if ("." + check_path) in common_file_types[file_type]:
+                check_path = file_type
+                break
+
+    wished_path = os.path.join(base_path, check_path)
     # path is not existing
     if not os.path.exists(wished_path):
         os.mkdir(wished_path)
@@ -71,8 +104,14 @@ def filename_existing(destination_path, check_name):
 class MyHandler(FileSystemEventHandler):
     moved_file = ""
 
+    def on_created(self, event):
+        self.handle_watcher_function(event)
+
     # if a file is modified
     def on_modified(self, event):
+        self.handle_watcher_function(event)
+
+    def handle_watcher_function(self, event):
         # check if the file exists if it has been moved before and if ist not the folder we look at
         if not os.path.isdir(event.src_path) and os.path.exists(event.src_path) \
                 and not event.src_path == self.moved_file:
@@ -81,26 +120,30 @@ class MyHandler(FileSystemEventHandler):
             if rename:
                 # self.last_file = event.src_path
                 filename, file_type = get_file_name_type(event.src_path)
-                # creates the folder for the file type
-                new_destination = create_folder_if_not_existing(folder_to_track, file_type)
-                # get's the current date
-                current_date = get_date_and_format()
-                # creates the folder for the date
-                new_destination = create_folder_if_not_existing(new_destination, current_date)
+                # only continues if the file got a type
+                if file_type != "":
+                    # creates the folder for the file type
+                    new_destination = create_folder_if_not_existing(folder_to_track, file_type, True)
+                    # get's the current date
+                    current_date = get_date_and_format()
+                    # creates the folder for the date
+                    new_destination = create_folder_if_not_existing(new_destination, current_date, False)
 
-                # renames the file als long as the name exist in the folder
-                file_incrementer = 1
-                # to add the increment right
-                new_filename = filename
-                while filename_existing(new_destination, new_filename):
-                    new_filename = rename_if_existing(filename, file_type, file_incrementer)
-                    file_incrementer += 1
+                    # renames the file als long as the name exist in the folder
+                    file_incrementer = 1
+                    # to add the increment right
+                    new_filename = filename
+                    while filename_existing(new_destination, new_filename):
+                        new_filename = rename_if_existing(filename, file_type, file_incrementer)
+                        file_incrementer += 1
 
-                # renames the file
-                destination_path = os.path.join(new_destination, new_filename)
-                self.moved_file = destination_path
-                os.rename(event.src_path, destination_path)
-                print(f"Moved: {new_filename}")
+                    # renames the file
+                    destination_path = os.path.join(new_destination, new_filename)
+                    self.moved_file = destination_path
+                    os.rename(event.src_path, destination_path)
+                    print(f"Moved: {new_filename}")
+                else:
+                    print("Cannot move File without a type!")
 
 
 folder_to_track = "/home/ich/Downloads"
