@@ -66,7 +66,7 @@ def filename_existing(destination_path, check_name):
 
     return False
 
-
+# TODO make it work in the same folder
 # custom handler for the changes in the file system
 class MyHandler(FileSystemEventHandler):
     last_file = ""
