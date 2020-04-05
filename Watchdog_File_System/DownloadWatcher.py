@@ -66,22 +66,23 @@ def filename_existing(destination_path, check_name):
 
     return False
 
-# TODO make it work in the same folder
+
 # custom handler for the changes in the file system
 class MyHandler(FileSystemEventHandler):
-    last_file = ""
+    moved_file = ""
 
     # if a file is modified
     def on_modified(self, event):
         # check if the file exists if it has been moved before and if ist not the folder we look at
-        if not os.path.isdir(event.src_path) and os.path.exists(event.src_path):
+        if not os.path.isdir(event.src_path) and os.path.exists(event.src_path) \
+                and not event.src_path == self.moved_file:
             rename = check_file_complete(event.src_path)
             # if the file is complete
             if rename:
                 # self.last_file = event.src_path
                 filename, file_type = get_file_name_type(event.src_path)
                 # creates the folder for the file type
-                new_destination = create_folder_if_not_existing(destination_folder, file_type)
+                new_destination = create_folder_if_not_existing(folder_to_track, file_type)
                 # get's the current date
                 current_date = get_date_and_format()
                 # creates the folder for the date
@@ -96,13 +97,13 @@ class MyHandler(FileSystemEventHandler):
                     file_incrementer += 1
 
                 # renames the file
-                dst_path = os.path.join(new_destination, new_filename)
-                os.rename(event.src_path, dst_path)
+                destination_path = os.path.join(new_destination, new_filename)
+                self.moved_file = destination_path
+                os.rename(event.src_path, destination_path)
                 print(f"Moved: {new_filename}")
 
 
 folder_to_track = "/home/ich/Downloads"
-destination_folder = "/home/ich/Desktop/New_Location"
 event_handler = MyHandler()
 
 # starting the observer and keep it running until you enter "control + c"
