@@ -22,7 +22,7 @@ common_file_types = {'Audio': ['.aif', '.cda', '.mid', '.midi', '.mp3', '.mpa', 
                                   '.part',
                                   '.php', '.py', '.rss', '.xhtml'],
                      'Presentation': ['.key', '.odp', '.pps', '.ppt', '.pptx'],
-                     'Programming': ['.c', '.class', '.cpp', '.cs', '.h', '.java', '.pl', '.sh', '.swift', '.vb'],
+                     'Programming': ['.c', '.class', '.cpp', '.cs', '.h', '.java', '.pl', '.sh', '.swift', '.vb', '.py'],
                      'Spreadsheet': ['.ods', '.xls', '.xlsm', '.xlsx'],
                      'System': ['.bak', '.cab', '.cfg', '.cpl', '.cur', '.dll', '.dmp', '.drv', '.icns', '.ico', '.ini',
                                 '.lnk', '.msi',
@@ -30,7 +30,7 @@ common_file_types = {'Audio': ['.aif', '.cda', '.mid', '.midi', '.mp3', '.mpa', 
                      'Video': ['.3g2', '.3gp', '.avi', '.flv', '.h264', '.m4v', '.mkv', '.mov', '.mp4', '.mpg', '.mpeg',
                                '.rm', '.swf',
                                '.vob', '.wmv'],
-                     'Word': ['.doc', '.docx', '.odt', '.pdf', '.rtf', '.tex', '.txt', '.wpd']}
+                     'Text': ['.doc', '.docx', '.odt', '.pdf', '.rtf', '.tex', '.txt', '.wpd']}
 
 
 # wait's until the file is "complete" if it is downloaded
@@ -64,12 +64,17 @@ def get_file_name_type(file_path):
 
 # creates the a folder with the wished name if it dos'nt exists
 def create_folder_if_not_existing(base_path, check_path, check_type):
+    is_common_file_type = False
     # check what file type it is and set's the relevant folder
     if check_type:
         for file_type in common_file_types:
-            if ("." + check_path) in common_file_types[file_type]:
+            if (("." + check_path).lower()) in common_file_types[file_type]:
                 check_path = file_type
+                is_common_file_type = True
                 break
+    # if the file type is not a in the common file types
+    if not is_common_file_type:
+        check_path = "Sonstiges"
 
     wished_path = os.path.join(base_path, check_path)
     # path is not existing
