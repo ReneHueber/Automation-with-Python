@@ -4,7 +4,7 @@ import time
 import os
 
 new_key_logs = {}
-file_path = "/home/ich/Shared_Data/Files/KeyLogger/KeyLogger.txt"
+file_path = "/home/ich/Shared_Data/Files/KeyLogger/KeyLogs.txt"
 
 
 # register all the key strokes and saves the values to an dict
