@@ -16,8 +16,10 @@ def on_release(key):
 
         if char in new_key_logs:
             new_key_logs[char] += 1
+            new_key_logs["total"] += 1
         else:
             new_key_logs[char] = 1
+            new_key_logs["total"] += 1
     except AttributeError:
         str_key = "{0}".format(key)
         key_value = str_key.split(".")[1]
@@ -27,8 +29,10 @@ def on_release(key):
 
         if key_value in new_key_logs:
             new_key_logs[key_value] += 1
+            new_key_logs["total"] += 1
         else:
             new_key_logs[key_value] = 1
+            new_key_logs["total"] += 1
 
 
 # read the saved key logs
