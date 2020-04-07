@@ -72,9 +72,9 @@ def create_folder_if_not_existing(base_path, check_path, check_type):
                 check_path = file_type
                 is_common_file_type = True
                 break
-    # if the file type is not a in the common file types
-    if not is_common_file_type:
-        check_path = "Sonstiges"
+        # if the file type is not a in the common file types
+        if not is_common_file_type:
+            check_path = "Sonstiges"
 
     wished_path = os.path.join(base_path, check_path)
     # path is not existing

