@@ -5,18 +5,17 @@ from watchdog.events import FileSystemEventHandler
 from datetime import datetime
 import os
 import time
+import json
 
 # if folders or prefix are changed, change them here
-track_folder = "/home/ich/Schreibtisch/Move_Folder"
-destination_base_folder = "/home/ich/Dokumente/Projekte_Andere/Rechnungen"
+track_folder = "/home/ich/Desktop/Move_Folder"
+destination_base_folder = "/home/ich/Documents/Projekte_Andere/Rechnungen"
+json_file_path = "/home/ich/Documents/Projekte_Andere/Rechnungen/open_bills.txt"
 # TODO maybe remove bill_prefix and add it in the program
 bill_prefix = "Rechnung-"
 own_bill_unique = "Sonnenseite"
 outgoing_bills_folder = "Rechnungen_von_Mir"
 incoming_bills_folder = "Rechnungen_an_Mich"
-
-
-# TODO offene Rechnungen in json file schreiben
 
 
 # object for the bills to handle data management better
@@ -28,6 +27,7 @@ class Bill:
     unpaid = ""
     parent_folder = ""
     move_path = ""
+    outgoing = True
 
 
 # wait's until the file is "complete" if it is downloaded
@@ -73,6 +73,7 @@ def get_bill_values(file_name):
         current_bill.company_name = values[2]
         current_bill.unpaid = check_bill_unpaid(5, values)
         current_bill.parent_folder = outgoing_bills_folder
+        current_bill.outgoing = True
     # bill is for the customer (incoming)
     else:
         current_bill.month = values[0]
@@ -80,6 +81,7 @@ def get_bill_values(file_name):
         current_bill.company_name = values[2]
         current_bill.unpaid = check_bill_unpaid(4, values)
         current_bill.parent_folder = incoming_bills_folder
+        current_bill.outgoing = False
 
     return current_bill
 
@@ -123,6 +125,26 @@ def create_move_path(current_bill):
 
     # add's the filename to the new path
     current_bill.move_path = os.path.join(current_bill.move_path, current_bill.file_name)
+    check_add_open_bill(current_bill)
+
+
+# checks if the bill is unpaid and adds it to the dictionary to be written in the json file
+def check_add_open_bill(current_bill):
+    if current_bill.unpaid == "Offen":
+        if current_bill.outgoing:
+            open_bills["bills_outgoing"].append({
+                "company_name": current_bill.company_name,
+                "file_name": current_bill.file_name,
+                "file_path": current_bill.move_path
+            })
+        else:
+            open_bills["bills_incoming"].append({
+                "company_name": current_bill.company_name,
+                "file_name": current_bill.file_name,
+                "file_path": current_bill.move_path
+            })
+
+    write_json_to_file()
 
 
 # moves the file to the right destination
@@ -131,7 +153,7 @@ def move_file(src_path, current_bill):
 
 
 # call's all the functions necessary to create the folders and moves the file
-def handle_bill_move(self, event):
+def handle_bill_move(event):
     # only rename if it is not a directory
     if not os.path.isdir(event.src_path) and os.path.exists(event.src_path):
         # checks if the file is moved completely
@@ -147,18 +169,39 @@ def handle_bill_move(self, event):
             move_file(event.src_path, bill)
 
 
+# writes the data to the json file
+def write_json_to_file():
+    with open(json_file_path, "w") as outfile:
+        json.dump(open_bills, outfile)
+
+
+# read's the data for the json file
+def read_json_from_file():
+    data = {}
+    if os.path.getsize(json_file_path) != 0:
+        with open(json_file_path) as json_file:
+            data = json.load(json_file)
+    else:
+        data["bills_incoming"] = []
+        data["bills_outgoing"] = []
+
+    return data
+
+
 class MyHandler(FileSystemEventHandler):
     moved_file = ""
 
     # file has been created
     def on_created(self, event):
-        self.handle_bill_rename(event)
+        handle_bill_move(event)
 
     # if a file is modified
     def on_modified(self, event):
-        self.handle_bill_rename(event)
+        handle_bill_move(event)
 
 
+# reads the json file if it's not empty, otherwise creates it
+open_bills = read_json_from_file()
 event_handler = MyHandler()
 
 # starting the observer and keep it running until you enter "control + c"
