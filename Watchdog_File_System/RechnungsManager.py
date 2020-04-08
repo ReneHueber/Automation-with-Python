@@ -11,6 +11,7 @@ import json
 track_folder = "/home/ich/Desktop/Move_Folder"
 destination_base_folder = "/home/ich/Documents/Projekte_Andere/Rechnungen"
 json_file_path = "/home/ich/Documents/Projekte_Andere/Rechnungen/open_bills.txt"
+log_file_path = "/home/ich/Desktop/Log_file.txt"
 # TODO maybe remove bill_prefix and add it in the program
 bill_prefix = "Rechnung-"
 own_bill_unique = "Sonnenseite"
@@ -22,12 +23,15 @@ incoming_bills_folder = "Rechnungen_an_Mich"
 class Bill:
     file_name = ""
     company_name = ""
+    sequential_number = ""
     month = None
     year = None
-    unpaid = ""
+    payment_status_folder = ""
     parent_folder = ""
     move_path = ""
     outgoing = True
+    increment = 1
+    file_type = ""
 
 
 # wait's until the file is "complete" if it is downloaded
@@ -62,16 +66,16 @@ def get_file_name_type(file_path):
 
 
 # get's the information of the filename
-def get_bill_values(file_name):
-    current_bill = Bill()
+def get_bill_values(file_name, current_bill):
     values_string = file_name.split(bill_prefix)[1]
     values = values_string.split("_")
     # bill is for a customer (outgoing)
     if own_bill_unique in values:
         current_bill.month = values[0]
         current_bill.year = values[1].split("-")[0]
+        current_bill.sequential_number = values[1]
         current_bill.company_name = values[2]
-        current_bill.unpaid = check_bill_unpaid(5, values)
+        current_bill.payment_status_folder = check_bill_unpaid(5, values)
         current_bill.parent_folder = outgoing_bills_folder
         current_bill.outgoing = True
     # bill is for the customer (incoming)
@@ -79,7 +83,7 @@ def get_bill_values(file_name):
         current_bill.month = values[0]
         current_bill.year = format_incoming_bill_year(values[1])
         current_bill.company_name = values[2]
-        current_bill.unpaid = check_bill_unpaid(4, values)
+        current_bill.payment_status_folder = check_bill_unpaid(4, values)
         current_bill.parent_folder = incoming_bills_folder
         current_bill.outgoing = False
 
@@ -116,33 +120,33 @@ def create_move_path(current_bill):
     # formats the date for the folder
     formatted_date = "{0}-{1}".format(current_bill.year, current_bill.month)
     # a list, because 3 folder layer have to be created
-    move_list = [formatted_date, current_bill.company_name, current_bill.unpaid]
+    move_list = [formatted_date, current_bill.company_name, current_bill.payment_status_folder]
 
     # creates and add's the three folder layers
     for folder in move_list:
         current_bill.move_path = os.path.join(current_bill.move_path, folder)
         create_needed_folder(current_bill.move_path)
 
-    # add's the filename to the new path
-    current_bill.move_path = os.path.join(current_bill.move_path, current_bill.file_name)
-    check_add_open_bill(current_bill)
-
 
 # checks if the bill is unpaid and adds it to the dictionary to be written in the json file
 def check_add_open_bill(current_bill):
-    if current_bill.unpaid == "Offen":
+    if current_bill.payment_status_folder == "Offen":
         if current_bill.outgoing:
             open_bills["bills_outgoing"].append({
                 "company_name": current_bill.company_name,
                 "file_name": current_bill.file_name,
                 "file_path": current_bill.move_path
             })
+            write_log(
+                "\tAdd Outgoing open Bill \"{0}\" form {1}".format(current_bill.file_name, current_bill.company_name))
         else:
             open_bills["bills_incoming"].append({
                 "company_name": current_bill.company_name,
                 "file_name": current_bill.file_name,
                 "file_path": current_bill.move_path
             })
+            write_log(
+                "\tAdd Ingoing open Bill \"{0}\" form {1}".format(current_bill.file_name, current_bill.company_name))
 
     write_json_to_file()
 
@@ -150,6 +154,55 @@ def check_add_open_bill(current_bill):
 # moves the file to the right destination
 def move_file(src_path, current_bill):
     os.rename(src_path, current_bill.move_path)
+    write_log("Moved {0} to {1}".format(current_bill.file_name, current_bill.move_path.split(destination_base_folder)))
+
+
+# check's if the file name already exists
+# if it exists it, return true
+def check_file_name_existing(current_bill):
+    for existing_file_name in os.listdir(current_bill.move_path):
+        if existing_file_name == current_bill.file_name:
+            return True
+
+    return False
+
+
+# renames the file if the filename exists, add's a number after the company name
+def rename_file_if_existing(bill):
+    old_file_name = bill.file_name
+    # check's if the file is open and add's the right symbol
+    add_open = ""
+    if bill.payment_status_folder == "Offen":
+        add_open = "_o"
+
+    # add's a number after the company, depending on outgoing and incoming bills
+    if bill.outgoing:
+        bill.file_name = "{prefix}{month}_{sequel_number}_{company}_{increment}_{unique}" \
+                         "{payment_status}.{type}".format(prefix=bill_prefix, month=bill.month,
+                                                          sequel_number=bill.sequential_number,
+                                                          company=bill.company_name, increment=bill.increment,
+                                                          unique=own_bill_unique, payment_status=add_open,
+                                                          type=bill.file_type)
+    else:
+        bill.file_name = "{prefix}{month}_{year}_{company}_{increment}{payment_status}.{type}" \
+                         "".format(prefix=bill_prefix, month=bill.month, year=bill.year,
+                                   company=bill.company_name, increment=bill.increment,
+                                   payment_status=add_open, type=bill.file_type)
+
+    write_log("\tRenamed incoming Bill \"{0}\" to \"{1}\"".format(old_file_name, bill.file_name))
+    bill.increment += 1
+
+
+# changes the file name as long as there is file that has the same name
+# add's a number after the company that get's increased
+def handle_same_name(current_bill):
+    while check_file_name_existing(current_bill):
+        rename_file_if_existing(current_bill)
+
+    # add's the filename to the new path
+    current_bill.move_path = os.path.join(current_bill.move_path, current_bill.file_name)
+    # check's if the bill in unpaid and in this case add's it to the json file
+    check_add_open_bill(current_bill)
 
 
 # call's all the functions necessary to create the folders and moves the file
@@ -160,12 +213,16 @@ def handle_bill_move(event):
         start_move = check_file_complete(event.src_path)
         # if it is moved completely it can be moved
         if start_move:
+            bill = Bill()
             # get's the file name, type an the name without the file type
             file_name, file_type, file_name_without_ending = get_file_name_type(event.src_path)
+            bill.file_type = file_type
             # get's the values of the file name
-            bill = get_bill_values(file_name_without_ending)
+            bill = get_bill_values(file_name_without_ending, bill)
             bill.file_name = file_name
             create_move_path(bill)
+            handle_same_name(bill)
+
             move_file(event.src_path, bill)
 
 
@@ -188,6 +245,22 @@ def read_json_from_file():
     return data
 
 
+# writes a log to the log file
+def write_log(log):
+    # get's the time for the log
+    date_time = datetime.utcnow()
+    time_log = date_time.strftime("%m/%d/%Y, %H:%M:%S")
+    log_text = "{0}:\t{1}\n".format(time_log, log)
+
+    # add's an emtpy line if the Watcher start's new, for the format
+    if log == "Watcher started!":
+        log_text = "\n{0}".format(log_text)
+
+    # writes to the file
+    with open(log_file_path, "a") as log_file:
+        log_file.write(log_text)
+
+
 class MyHandler(FileSystemEventHandler):
     moved_file = ""
 
@@ -208,7 +281,7 @@ event_handler = MyHandler()
 observer = Observer()
 observer.schedule(event_handler, track_folder, recursive=True)
 observer.start()
-print("Watcher started")
+write_log("Watcher started!")
 
 try:
     while True:
