@@ -8,15 +8,17 @@ import time
 import json
 
 # if folders or prefix are changed, change them here
-track_folder = "/home/ich/Desktop/Move_Folder"
-destination_base_folder = "/home/ich/Documents/Projekte_Andere/Rechnungen"
-json_file_path = "/home/ich/Documents/Projekte_Andere/Rechnungen/open_bills.txt"
-log_file_path = "/home/ich/Desktop/Log_file.txt"
+track_folder = "/home/ich/Schreibtisch/Move_Folder"
+destination_base_folder = "/home/ich/Dokumente/Projekte_Andere/Rechnungen"
+json_file_path = "/home/ich/Dokumente/Projekte_Andere/Rechnungen/open_bills.txt"
+log_file_path = "/home/ich/Schreibtisch/Log_file.txt"
 # TODO maybe remove bill_prefix and add it in the program
 bill_prefix = "Rechnung-"
 own_bill_unique = "Sonnenseite"
 outgoing_bills_folder = "Rechnungen_von_Mir"
 incoming_bills_folder = "Rechnungen_an_Mich"
+
+moved_src_path = ""
 
 
 # object for the bills to handle data management better
@@ -65,29 +67,33 @@ def get_file_name_type(file_path):
     return file_name, file_type, file_name_without_ending
 
 
-# get's the information of the filename
+# get's the information of the filename, checks if format is correct
 def get_bill_values(file_name, current_bill):
-    values_string = file_name.split(bill_prefix)[1]
-    values = values_string.split("_")
-    # bill is for a customer (outgoing)
-    if own_bill_unique in values:
-        current_bill.month = values[0]
-        current_bill.year = values[1].split("-")[0]
-        current_bill.sequential_number = values[1]
-        current_bill.company_name = values[2]
-        current_bill.payment_status_folder = check_bill_unpaid(5, values)
-        current_bill.parent_folder = outgoing_bills_folder
-        current_bill.outgoing = True
-    # bill is for the customer (incoming)
-    else:
-        current_bill.month = values[0]
-        current_bill.year = format_incoming_bill_year(values[1])
-        current_bill.company_name = values[2]
-        current_bill.payment_status_folder = check_bill_unpaid(4, values)
-        current_bill.parent_folder = incoming_bills_folder
-        current_bill.outgoing = False
+    try:
+        values_string = file_name.split(bill_prefix)[1]
+        values = values_string.split("_")
+        # bill is for a customer (outgoing)
+        if own_bill_unique in values:
+            current_bill.month = values[0]
+            current_bill.year = values[1].split("-")[0]
+            current_bill.sequential_number = values[1]
+            current_bill.company_name = values[2]
+            current_bill.payment_status_folder = check_bill_unpaid(5, values)
+            current_bill.parent_folder = outgoing_bills_folder
+            current_bill.outgoing = True
+        # bill is for the customer (incoming)
+        else:
+            current_bill.month = values[0]
+            current_bill.year = format_incoming_bill_year(values[1])
+            current_bill.company_name = values[2]
+            current_bill.payment_status_folder = check_bill_unpaid(4, values)
+            current_bill.parent_folder = incoming_bills_folder
+            current_bill.outgoing = False
 
-    return current_bill
+        return current_bill
+    except IndexError:
+        write_log("\tDer Filename: \"{0}\" entspricht nicht der formatierung.".format(file_name))
+        return None
 
 
 # format's the year if it is necessary
@@ -138,7 +144,7 @@ def check_add_open_bill(current_bill):
                 "file_path": current_bill.move_path
             })
             write_log(
-                "\tAdd Outgoing open Bill \"{0}\" form {1}".format(current_bill.file_name, current_bill.company_name))
+                "\tAdd Outgoing open Bill \"{0}\" form {1}.".format(current_bill.file_name, current_bill.company_name))
         else:
             open_bills["bills_incoming"].append({
                 "company_name": current_bill.company_name,
@@ -146,7 +152,7 @@ def check_add_open_bill(current_bill):
                 "file_path": current_bill.move_path
             })
             write_log(
-                "\tAdd Ingoing open Bill \"{0}\" form {1}".format(current_bill.file_name, current_bill.company_name))
+                "\tAdd Ingoing open Bill \"{0}\" form {1}.".format(current_bill.file_name, current_bill.company_name))
 
     write_json_to_file()
 
@@ -154,7 +160,7 @@ def check_add_open_bill(current_bill):
 # moves the file to the right destination
 def move_file(src_path, current_bill):
     os.rename(src_path, current_bill.move_path)
-    write_log("Moved {0} to {1}".format(current_bill.file_name, current_bill.move_path.split(destination_base_folder)))
+    write_log("Moved \"{0}\" to {1}.".format(current_bill.file_name, current_bill.move_path.split(destination_base_folder)))
 
 
 # check's if the file name already exists
@@ -167,7 +173,7 @@ def check_file_name_existing(current_bill):
     return False
 
 
-# renames the file if the filename exists, add's a number after the company name
+# renames the file if the filename exists, add's a number after the company name, if the bill is an incoming bill
 def rename_file_if_existing(bill):
     old_file_name = bill.file_name
     # check's if the file is open and add's the right symbol
@@ -175,34 +181,31 @@ def rename_file_if_existing(bill):
     if bill.payment_status_folder == "Offen":
         add_open = "_o"
 
-    # add's a number after the company, depending on outgoing and incoming bills
-    if bill.outgoing:
-        bill.file_name = "{prefix}{month}_{sequel_number}_{company}_{increment}_{unique}" \
-                         "{payment_status}.{type}".format(prefix=bill_prefix, month=bill.month,
-                                                          sequel_number=bill.sequential_number,
-                                                          company=bill.company_name, increment=bill.increment,
-                                                          unique=own_bill_unique, payment_status=add_open,
-                                                          type=bill.file_type)
-    else:
-        bill.file_name = "{prefix}{month}_{year}_{company}_{increment}{payment_status}.{type}" \
-                         "".format(prefix=bill_prefix, month=bill.month, year=bill.year,
-                                   company=bill.company_name, increment=bill.increment,
-                                   payment_status=add_open, type=bill.file_type)
+    # add's a number after the company
+    bill.file_name = "{prefix}{month}_{year}_{company}_{increment}{payment_status}.{type}" \
+                     "".format(prefix=bill_prefix, month=bill.month, year=bill.year,
+                               company=bill.company_name, increment=bill.increment,
+                               payment_status=add_open, type=bill.file_type)
 
-    write_log("\tRenamed incoming Bill \"{0}\" to \"{1}\"".format(old_file_name, bill.file_name))
+    write_log("\tRenamed incoming Bill \"{0}\" to \"{1}\".".format(old_file_name, bill.file_name))
     bill.increment += 1
 
 
 # changes the file name as long as there is file that has the same name
 # add's a number after the company that get's increased
 def handle_same_name(current_bill):
-    while check_file_name_existing(current_bill):
-        rename_file_if_existing(current_bill)
+    file_name_existing = False
+    # only renames if the bill is incoming, because the outgoing bills have a sequential number
+    if not current_bill.outgoing:
+        while check_file_name_existing(current_bill):
+            rename_file_if_existing(current_bill)
+    else:
+        file_name_existing = check_file_name_existing(current_bill)
 
     # add's the filename to the new path
     current_bill.move_path = os.path.join(current_bill.move_path, current_bill.file_name)
-    # check's if the bill in unpaid and in this case add's it to the json file
-    check_add_open_bill(current_bill)
+    # to check if the file name exists by an outgoing bill
+    return file_name_existing
 
 
 # call's all the functions necessary to create the folders and moves the file
@@ -219,11 +222,25 @@ def handle_bill_move(event):
             bill.file_type = file_type
             # get's the values of the file name
             bill = get_bill_values(file_name_without_ending, bill)
-            bill.file_name = file_name
-            create_move_path(bill)
-            handle_same_name(bill)
 
-            move_file(event.src_path, bill)
+            # file name in the right format to extract data
+            if bill is not None:
+                bill.file_name = file_name
+                create_move_path(bill)
+                same_outgoing_bill = handle_same_name(bill)
+
+                if not same_outgoing_bill:
+                    # check's if the bill in unpaid and in this case add's it to the json file
+                    check_add_open_bill(bill)
+                    # moves the file
+                    move_file(event.src_path, bill)
+                    return True
+                else:
+                    write_log("\tDie Rechnung mit dem Namen \"{0}\" existiert bereits, "
+                              "daher wurde sie nicht verschoben.".format(bill.file_name))
+                    return False
+    else:
+        return False
 
 
 # writes the data to the json file
@@ -262,15 +279,17 @@ def write_log(log):
 
 
 class MyHandler(FileSystemEventHandler):
-    moved_file = ""
+    file_format_correct = True
 
     # file has been created
     def on_created(self, event):
-        handle_bill_move(event)
+        if not os.path.isdir(event.src_path):
+            self.file_format_correct = handle_bill_move(event)
 
     # if a file is modified
     def on_modified(self, event):
-        handle_bill_move(event)
+        if self.file_format_correct and not os.path.isdir(event.src_path):
+            self.file_format_correct = handle_bill_move(event)
 
 
 # reads the json file if it's not empty, otherwise creates it
