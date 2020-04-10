@@ -8,10 +8,10 @@ import time
 import json
 
 # if folders or prefix are changed, change them here
-track_folder = "/home/ich/Schreibtisch/Move_Folder"
-destination_base_folder = "/home/ich/Dokumente/Projekte_Andere/Rechnungen"
-json_file_path = "/home/ich/Dokumente/Projekte_Andere/Rechnungen/open_bills.txt"
-log_file_path = "/home/ich/Schreibtisch/Log_file.txt"
+track_folder = "/home/ich/Desktop/Move_Folder"
+destination_base_folder = "/home/ich/Documents/Projekte_Andere/Rechnungen"
+json_file_path = "/home/ich/Documents/Projekte_Andere/Rechnungen/open_bills.txt"
+log_file_path = "/home/ich/Desktop/Log_file.txt"
 # TODO maybe remove bill_prefix and add it in the program
 bill_prefix = "Rechnung-"
 own_bill_unique = "Sonnenseite"
@@ -32,7 +32,7 @@ class Bill:
     parent_folder = ""
     move_path = ""
     outgoing = True
-    increment = 1
+    increment = 2
     file_type = ""
 
 
@@ -137,30 +137,35 @@ def create_move_path(current_bill):
 # checks if the bill is unpaid and adds it to the dictionary to be written in the json file
 def check_add_open_bill(current_bill):
     if current_bill.payment_status_folder == "Offen":
+        # get's the values every time before writing for the json file,
+        # because the values can change while the program is running
+        open_bills = read_json_from_file()
         if current_bill.outgoing:
-            open_bills["bills_outgoing"].append({
-                "company_name": current_bill.company_name,
-                "file_name": current_bill.file_name,
-                "file_path": current_bill.move_path
-            })
-            write_log(
-                "\tAdd Outgoing open Bill \"{0}\" form {1}.".format(current_bill.file_name, current_bill.company_name))
+            add_dict_json(current_bill, open_bills, "bills_outgoing", "Outgoing")
         else:
-            open_bills["bills_incoming"].append({
-                "company_name": current_bill.company_name,
-                "file_name": current_bill.file_name,
-                "file_path": current_bill.move_path
-            })
-            write_log(
-                "\tAdd Ingoing open Bill \"{0}\" form {1}.".format(current_bill.file_name, current_bill.company_name))
+            add_dict_json(current_bill, open_bills, "bills_incoming", "Incoming")
 
-    write_json_to_file()
+        write_json_to_file(open_bills)
+
+
+# add's an unpaid bill to the dict
+def add_dict_json(bill, open_bills, dict_key, bill_type):
+    open_bills[dict_key].append({
+        "company_name": bill.company_name,
+        "month": bill.month,
+        "year": bill.year,
+        "file_name": bill.file_name,
+        "file_path": bill.move_path
+    })
+    write_log(
+        "\tAdd {0} open Bill \"{1}\" form {2}.".format(bill_type, bill.file_name, bill.company_name))
 
 
 # moves the file to the right destination
 def move_file(src_path, current_bill):
     os.rename(src_path, current_bill.move_path)
-    write_log("Moved \"{0}\" to {1}.".format(current_bill.file_name, current_bill.move_path.split(destination_base_folder)))
+    write_log("Moved \"{0}\" to {1}.".format(current_bill.file_name,
+                                             current_bill.move_path.split(destination_base_folder)))
 
 
 # check's if the file name already exists
@@ -244,7 +249,7 @@ def handle_bill_move(event):
 
 
 # writes the data to the json file
-def write_json_to_file():
+def write_json_to_file(open_bills):
     with open(json_file_path, "w") as outfile:
         json.dump(open_bills, outfile)
 
@@ -292,8 +297,6 @@ class MyHandler(FileSystemEventHandler):
             self.file_format_correct = handle_bill_move(event)
 
 
-# reads the json file if it's not empty, otherwise creates it
-open_bills = read_json_from_file()
 event_handler = MyHandler()
 
 # starting the observer and keep it running until you enter "control + c"
