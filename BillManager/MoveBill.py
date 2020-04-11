@@ -11,8 +11,9 @@ class MoveBill:
     # moves the file to the right destination
     def move_file(self, src_path, current_bill):
         os.rename(src_path, current_bill.move_path)
-        write_log("Moved \"{0}\" to {1}.".format(current_bill.file_name,
-                                                 current_bill.move_path.split(self.destination_base_folder)))
+        write_log("Moved \"{0}\" to \"{1}\".\n".format(current_bill.file_name,
+                                                       current_bill.move_path.split(self.destination_base_folder + "/")
+                                                       [1]))
 
     # creates the path to move the file in the right folder
     def create_move_path(self, current_bill):
