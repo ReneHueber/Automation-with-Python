@@ -91,11 +91,15 @@ def handle_bill_move(event):
             if bill is not None:
                 bill.file_name = file_name
                 move_bill.create_move_path(bill)
-                same_outgoing_bill = RenameBill.handle_same_name(bill, bill_prefix)
+                if not bill.outgoing:
+                    bill.bill_number = RenameBill.get_next_bill_number(bill)
+                    RenameBill.rename_file(bill)
+                file_name_existing = RenameBill.check_file_name_existing(bill)
 
-                if not same_outgoing_bill:
+                if not file_name_existing:
                     # check's if the bill in unpaid and in this case add's it to the json file
                     check_add_open_bill(bill)
+                    bill.move_path = os.path.join(bill.move_path, bill.file_name)
                     # moves the file
                     move_bill.move_file(event.src_path, bill)
                     return True

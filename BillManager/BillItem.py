@@ -11,7 +11,7 @@ class Bill:
     parent_folder = ""
     move_path = ""
     outgoing = True
-    increment = 2
+    bill_number = 1
     file_type = ""
 
     bill_prefix = ""
@@ -37,7 +37,7 @@ class Bill:
                 self.year = values[1].split("-")[0]
                 self.sequential_number = values[1]
                 self.company_name = values[2]
-                self.payment_status_folder = check_bill_unpaid(5, values)
+                self.payment_status_folder = check_bill_unpaid(values)
                 self.parent_folder = self.outgoing_bills_folder
                 self.outgoing = True
             # bill is for the customer (incoming)
@@ -45,7 +45,7 @@ class Bill:
                 self.month = values[0]
                 self.year = format_incoming_bill_year(values[1])
                 self.company_name = values[2]
-                self.payment_status_folder = check_bill_unpaid(4, values)
+                self.payment_status_folder = check_bill_unpaid(values)
                 self.parent_folder = self.incoming_bills_folder
                 self.outgoing = False
 
@@ -53,6 +53,17 @@ class Bill:
         except IndexError:
             write_log("\tDer Filename: \"{0}\" entspricht nicht der formatierung.".format(file_name))
             return None
+
+
+# get's the file_name without prefix and file_type
+# return the number the bill has
+def get_bill_number(file_name):
+    values = file_name.split("_")
+    try:
+        return int(values[3])
+    except IndexError:
+        write_log("\tDer Filename: \"{0}\" entspricht nicht der formatierung.".format(file_name))
+        return None
 
 
 # format's the year if it is necessary
@@ -65,8 +76,8 @@ def format_incoming_bill_year(year):
 
 # checks if the bill in unpaid
 # returns True if the bill in unpaid
-def check_bill_unpaid(unpaid_length, values):
-    if len(values) == unpaid_length:
+def check_bill_unpaid(values):
+    if "o" in values:
         return "Offen"
     else:
         return "Bezahlt"
