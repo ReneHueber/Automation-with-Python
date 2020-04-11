@@ -1,5 +1,6 @@
 import json
 import os
+from BillManager.Logs import write_log
 
 
 class HandleJson:
@@ -24,3 +25,16 @@ class HandleJson:
             data["bills_outgoing"] = []
 
         return data
+
+
+# add's an unpaid bill to the dict
+def add_dict_json(bill, open_bills, dict_key, bill_type):
+    open_bills[dict_key].append({
+        "company_name": bill.company_name,
+        "month": bill.month,
+        "year": bill.year,
+        "file_name": bill.file_name,
+        "file_path": bill.move_path
+    })
+    write_log(
+        "\tAdd {0} open Bill \"{1}\" form {2}.".format(bill_type, bill.file_name, bill.company_name))

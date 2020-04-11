@@ -1,3 +1,4 @@
+from BillManager.Logs import write_log
 
 
 class Bill:
@@ -13,30 +14,59 @@ class Bill:
     increment = 2
     file_type = ""
 
+    bill_prefix = ""
+    own_bill_unique = ""
+    outgoing_bills_folder = ""
+    incoming_bills_folder = ""
+
+    def __init__(self, bill_prefix, own_bill_unique,
+                 outgoing_bills_folder, incoming_bills_folder):
+        self.bill_prefix = bill_prefix
+        self.own_bill_unique = own_bill_unique
+        self.outgoing_bills_folder = outgoing_bills_folder
+        self.incoming_bills_folder = incoming_bills_folder
+
     # get's the information of the filename, checks if format is correct
-    def get_bill_values(self, file_name, current_bill):
+    def set_bill_values(self, file_name):
         try:
-            values_string = file_name.split(bill_prefix)[1]
+            values_string = file_name.split(self.bill_prefix)[1]
             values = values_string.split("_")
             # bill is for a customer (outgoing)
-            if own_bill_unique in values:
-                current_bill.month = values[0]
-                current_bill.year = values[1].split("-")[0]
-                current_bill.sequential_number = values[1]
-                current_bill.company_name = values[2]
-                current_bill.payment_status_folder = check_bill_unpaid(5, values)
-                current_bill.parent_folder = outgoing_bills_folder
-                current_bill.outgoing = True
+            if self.own_bill_unique in values:
+                self.month = values[0]
+                self.year = values[1].split("-")[0]
+                self.sequential_number = values[1]
+                self.company_name = values[2]
+                self.payment_status_folder = check_bill_unpaid(5, values)
+                self.parent_folder = self.outgoing_bills_folder
+                self.outgoing = True
             # bill is for the customer (incoming)
             else:
-                current_bill.month = values[0]
-                current_bill.year = format_incoming_bill_year(values[1])
-                current_bill.company_name = values[2]
-                current_bill.payment_status_folder = check_bill_unpaid(4, values)
-                current_bill.parent_folder = incoming_bills_folder
-                current_bill.outgoing = False
+                self.month = values[0]
+                self.year = format_incoming_bill_year(values[1])
+                self.company_name = values[2]
+                self.payment_status_folder = check_bill_unpaid(4, values)
+                self.parent_folder = self.incoming_bills_folder
+                self.outgoing = False
 
-            return current_bill
+            return self
         except IndexError:
             write_log("\tDer Filename: \"{0}\" entspricht nicht der formatierung.".format(file_name))
             return None
+
+
+# format's the year if it is necessary
+def format_incoming_bill_year(year):
+    if len(year) == 2:
+        return "20{0}".format(year)
+    else:
+        return year
+
+
+# checks if the bill in unpaid
+# returns True if the bill in unpaid
+def check_bill_unpaid(unpaid_length, values):
+    if len(values) == unpaid_length:
+        return "Offen"
+    else:
+        return "Bezahlt"
