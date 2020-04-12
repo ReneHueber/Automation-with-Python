@@ -91,9 +91,12 @@ def handle_bill_move(event):
             if bill is not None:
                 bill.file_name = file_name
                 move_bill.create_move_path(bill)
+
+                # get's the bill number for the incoming bill
                 if not bill.outgoing:
                     bill.bill_number = RenameBill.get_next_bill_number(bill)
-                    RenameBill.rename_file(bill)
+                # renames the bills in the correct format
+                RenameBill.rename_file(bill)
                 file_name_existing = RenameBill.check_file_name_existing(bill)
 
                 if not file_name_existing:

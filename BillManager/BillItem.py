@@ -1,4 +1,5 @@
 from BillManager.Logs import write_log
+from datetime import datetime
 
 
 class Bill:
@@ -29,14 +30,12 @@ class Bill:
     # get's the information of the filename, checks if format is correct
     def set_bill_values(self, file_name):
         try:
-            values_string = file_name.split(self.bill_prefix)[1]
-            values = values_string.split("_")
+            values = file_name.split("-")
             # bill is for a customer (outgoing)
-            if self.own_bill_unique in values:
+            if is_outgoing_bill(values):
                 self.month = values[0]
-                self.year = values[1].split("-")[0]
-                self.sequential_number = values[1]
-                self.company_name = values[2]
+                self.company_name = values[1]
+                self.year, self.sequential_number = get_values_sequel_number()
                 self.payment_status_folder = check_bill_unpaid(values)
                 self.parent_folder = self.outgoing_bills_folder
                 self.outgoing = True
@@ -53,6 +52,52 @@ class Bill:
         except IndexError:
             write_log("\tDer Filename: \"{0}\" entspricht nicht der formatierung.".format(file_name))
             return None
+
+
+# checks it it is outgoing or an incoming bill
+# return True if bill is outgoing
+def is_outgoing_bill(values):
+    # at the outgoing bill the second value is a name
+    try:
+        int(values[1])
+        return False
+    except ValueError:
+        return True
+
+
+# read's the current sequel number for the file
+def read_sequel_number():
+    with open("/home/ich/Documents/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "r") as file:
+        sequel_number = file.readline()
+
+    return sequel_number
+
+
+# writes the current number to the file
+def write_sequel_number(sequel_number):
+    with open("/home/ich/Documents/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "w") as file:
+        file.write(sequel_number)
+
+
+# get's the values from the sequel number in the file, checks an modifies them, return year and number
+def get_values_sequel_number():
+    current_date = datetime.now()
+
+    try:
+        file_value = read_sequel_number()
+        year, number = file_value.split("-")
+
+        if current_date.year != int(year):
+            year = current_date.year
+
+        number = int(number) + 1
+        sequel_number = "{:d}-{:03d}".format(int(year), number)
+        write_sequel_number(sequel_number)
+    except ValueError:
+        year = None
+        sequel_number = None
+
+    return year, sequel_number
 
 
 # get's the file_name without prefix and file_type
