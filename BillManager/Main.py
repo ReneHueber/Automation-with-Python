@@ -19,6 +19,7 @@ bill_prefix = "Rechnung-"
 own_bill_unique = "Sonnenseite"
 outgoing_bills_folder = "Rechnungen_von_Mir"
 incoming_bills_folder = "Rechnungen_an_Mich"
+copy_path = "/home/ich/Desktop/Rechnungen_senden"
 
 moved_src_path = ""
 
@@ -103,8 +104,13 @@ def handle_bill_move(event):
                     # check's if the bill in unpaid and in this case add's it to the json file
                     check_add_open_bill(bill)
                     bill.move_path = os.path.join(bill.move_path, bill.file_name)
-                    # moves the file
-                    move_bill.move_file(event.src_path, bill)
+
+                    # moves the file and copy's it if the file is outgoing
+                    if bill.outgoing:
+                        move_bill.move_file(event.src_path, bill, "")
+                        MoveBill.copy_file(bill, copy_path)
+                    else:
+                        move_bill.move_file(event.src_path, bill, "\n")
                     return True
                 else:
                     write_log("\tDie Rechnung mit dem Namen \"{0}\" existiert bereits, "

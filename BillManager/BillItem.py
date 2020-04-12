@@ -35,7 +35,7 @@ class Bill:
             if is_outgoing_bill(values):
                 self.month = values[0]
                 self.company_name = values[1]
-                self.year, self.sequential_number = get_values_sequel_number()
+                self.year, self.sequential_number = get_values_sequential_number()
                 self.payment_status_folder = check_bill_unpaid(values)
                 self.parent_folder = self.outgoing_bills_folder
                 self.outgoing = True
@@ -65,39 +65,41 @@ def is_outgoing_bill(values):
         return True
 
 
-# read's the current sequel number for the file
-def read_sequel_number():
+# read's the current sequential number for the file
+def read_sequential_number():
     with open("/home/ich/Documents/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "r") as file:
         sequel_number = file.readline()
 
     return sequel_number
 
 
-# writes the current number to the file
-def write_sequel_number(sequel_number):
+# writes the updated sequential number to the file
+def write_sequential_number(sequel_number):
     with open("/home/ich/Documents/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "w") as file:
         file.write(sequel_number)
 
 
-# get's the values from the sequel number in the file, checks an modifies them, return year and number
-def get_values_sequel_number():
+# get's the values from the sequential number in the file, checks an modifies them, return year and number
+def get_values_sequential_number():
     current_date = datetime.now()
 
     try:
-        file_value = read_sequel_number()
+        file_value = read_sequential_number()
         year, number = file_value.split("-")
 
         if current_date.year != int(year):
             year = current_date.year
+            number = 0
+        else:
+            number = int(number) + 1
 
-        number = int(number) + 1
-        sequel_number = "{:d}-{:03d}".format(int(year), number)
-        write_sequel_number(sequel_number)
+        sequential_number = "{:d}-{:03d}".format(int(year), number)
+        write_sequential_number(sequential_number)
     except ValueError:
         year = None
-        sequel_number = None
+        sequential_number = None
 
-    return year, sequel_number
+    return year, sequential_number
 
 
 # get's the file_name without prefix and file_type
