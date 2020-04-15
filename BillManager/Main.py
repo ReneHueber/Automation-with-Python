@@ -19,6 +19,7 @@ bill_prefix = "Rechnung-"
 own_bill_unique = "Sonnenseite"
 outgoing_bills_folder = "Rechnungen_von_Mir"
 incoming_bills_folder = "Rechnungen_an_Mich"
+copy_path = "/home/ich/Desktop/Rechnungen_senden"
 
 moved_src_path = ""
 
@@ -77,36 +78,52 @@ def handle_bill_move(event):
     if not os.path.isdir(event.src_path) and os.path.exists(event.src_path):
         # checks if the file is moved completely
         start_move = check_file_complete(event.src_path)
-        # if it is moved completely it can be moved
+        # if it file is complete it can be moved
         if start_move:
             bill = BillItem.Bill(bill_prefix, own_bill_unique,
                                  outgoing_bills_folder, incoming_bills_folder)
             # get's the file name, type an the name without the file type
             file_name, file_type, file_name_without_ending = get_file_name_type(event.src_path)
-            bill.file_type = file_type
-            # get's the values of the file name
-            bill.set_bill_values(file_name_without_ending)
+            format_okay = BillItem.check_file_name_format(file_name_without_ending)
+            if format_okay:
+                bill.file_type = file_type
+                # get's the values of the file name
+                bill.set_bill_values(file_name_without_ending)
 
-            # file name in the right format to extract data
-            if bill is not None:
+                # file name in the right format to extract data
                 bill.file_name = file_name
                 move_bill.create_move_path(bill)
+
+                # get's the bill number for the incoming bill
                 if not bill.outgoing:
                     bill.bill_number = RenameBill.get_next_bill_number(bill)
-                    RenameBill.rename_file(bill)
+                # renames the bills in the correct format
+                RenameBill.rename_file(bill)
                 file_name_existing = RenameBill.check_file_name_existing(bill)
 
                 if not file_name_existing:
                     # check's if the bill in unpaid and in this case add's it to the json file
                     check_add_open_bill(bill)
                     bill.move_path = os.path.join(bill.move_path, bill.file_name)
-                    # moves the file
-                    move_bill.move_file(event.src_path, bill)
+
+                    # moves the file and copy's it if the file is outgoing
+                    if bill.outgoing:
+                        move_bill.move_file(event.src_path, bill, "")
+                        MoveBill.copy_file(bill, copy_path)
+                        # increases the sequential number and writes it to the file
+                        BillItem.write_sequential_number(bill.sequential_number)
+                    else:
+                        move_bill.move_file(event.src_path, bill, "\n")
                     return True
                 else:
                     write_log("\tDie Rechnung mit dem Namen \"{0}\" existiert bereits, "
                               "daher wurde sie nicht verschoben.".format(bill.file_name))
                     return False
+            else:
+                write_log("\tDer Filename: \"{0}\" entspricht nicht der formatierung.".format(file_name))
+                return False
+        else:
+            return False
     else:
         return False
 
