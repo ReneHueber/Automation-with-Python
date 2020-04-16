@@ -61,7 +61,7 @@ def update_db():
         conn = DbConnection.create_connection(db_path)
         with conn:
             DbConnection.update_value_by_date(conn, (key_log.keystrokes, key_log.date))
-        time.sleep(10)
+        time.sleep(5)
 
 
 # setup of the global key listener
