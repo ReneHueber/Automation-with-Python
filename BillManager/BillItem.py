@@ -34,28 +34,6 @@ class Bill:
         self.outgoing_bills_folder = outgoing_bills_folder
         self.incoming_bills_folder = incoming_bills_folder
 
-    """# get's the information of the filename, checks if format is correct
-    def set_bill_values(self, file_name):
-        values = file_name.split("-")
-        # bill is for a customer (outgoing)
-        if is_outgoing_bill(values):
-            self.month = values[0]
-            self.company_name = values[1]
-            self.year, self.sequential_number = get_values_sequential_number()
-            self.payment_status_folder = check_bill_unpaid(values)
-            self.parent_folder = self.outgoing_bills_folder
-            self.outgoing = True
-        # bill is for the customer (incoming)
-        else:
-            self.month = values[0]
-            self.year = format_incoming_bill_year(values[1])
-            self.company_name = values[2]
-            self.payment_status_folder = check_bill_unpaid(values)
-            self.parent_folder = self.incoming_bills_folder
-            self.outgoing = False
-
-        return self"""
-
     def set_bill_values(self, file_name, file_path):
         values = file_name.split("-")
 
@@ -66,17 +44,29 @@ class Bill:
             self.company_name = values[0]
             self.payment_status_folder = check_bill_unpaid(values)
             self.parent_folder = self.outgoing_bills_folder
-            self.outgoing = True
         # incoming bill
         else:
             # move bill in correct folder
             if values[0][0] == "~":
-                pass
+                value = file_name.split("~")
+                folder_values = value[1].split("-")
+                name_values = value[2].split("-")
+
+                self.month = folder_values[0]
+                self.year = folder_values[1]
+                self.company_name = folder_values[2]
+
+                self.description = name_values[0]
+                self.date_of_issue = name_values[1]
+                self.parent_folder = self.incoming_bills_folder
+                self.outgoing = False
             # move bill in temporary folder
             else:
                 self.company_name = values[0]
                 self.description = values[1]
                 self.date_of_issue = values[2]
+                self.parent_folder = self.incoming_bills_folder
+                self.outgoing = False
 
 
 # checks it it is outgoing or an incoming bill
