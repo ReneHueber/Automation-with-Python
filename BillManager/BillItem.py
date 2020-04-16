@@ -1,5 +1,8 @@
+import time
+
 from BillManager.Logs import write_log
 from datetime import datetime
+import os
 
 
 class Bill:
@@ -14,6 +17,10 @@ class Bill:
     outgoing = True
     bill_number = 1
     file_type = ""
+    creation_date = ""
+    sequential_numbers_list = []
+    description = ""
+    date_of_issue = None
 
     bill_prefix = ""
     own_bill_unique = ""
@@ -27,7 +34,7 @@ class Bill:
         self.outgoing_bills_folder = outgoing_bills_folder
         self.incoming_bills_folder = incoming_bills_folder
 
-    # get's the information of the filename, checks if format is correct
+    """# get's the information of the filename, checks if format is correct
     def set_bill_values(self, file_name):
         values = file_name.split("-")
         # bill is for a customer (outgoing)
@@ -47,57 +54,80 @@ class Bill:
             self.parent_folder = self.incoming_bills_folder
             self.outgoing = False
 
-        return self
+        return self"""
+
+    def set_bill_values(self, file_name, file_path):
+        values = file_name.split("-")
+
+        # outgoing bill
+        if is_outgoing_bill(values):
+            self.year, self.month = get_path_creation_date(file_path)
+            self.sequential_number, self.sequential_numbers_list = get_sequential_number(self.year)
+            self.company_name = values[0]
+            self.payment_status_folder = check_bill_unpaid(values)
+            self.parent_folder = self.outgoing_bills_folder
+            self.outgoing = True
+        # incoming bill
+        else:
+            # move bill in correct folder
+            if values[0][0] == "~":
+                pass
+            # move bill in temporary folder
+            else:
+                self.company_name = values[0]
+                self.description = values[1]
+                self.date_of_issue = values[2]
 
 
 # checks it it is outgoing or an incoming bill
 # return True if bill is outgoing
 def is_outgoing_bill(values):
-    # at the outgoing bill the second value is a name
-    try:
-        int(values[1])
-        return False
-    except ValueError:
+    if "own" in values:
         return True
+    else:
+        return False
 
 
 # read's the current sequential number for the file
 def read_sequential_number():
+    sequel_number = []
     with open("/home/ich/Documents/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "r") as file:
-        sequel_number = file.readline()
+        for line in file:
+            sequel_number.append(line.strip().split("-"))
 
     return sequel_number
 
 
 # writes the updated sequential number to the file
 # increases the sequential number by one
-def write_sequential_number(sequential_number):
-    year, number = sequential_number.split("-")
-    sequential_number = "{:d}-{:03d}".format(int(year), int(number) + 1)
+def write_sequential_number(bill_year, sequential_numbers):
+    for year in sequential_numbers:
+        if year[0] == bill_year:
+            number = int(year[1]) + 1
+            year[1] = "{:03d}".format(number)
+
+    sequential_numbers.sort()
+
     with open("/home/ich/Documents/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "w") as file:
-        file.write(sequential_number)
+        for sequential_number in sequential_numbers:
+            file.write("{0}-{1}\n".format(sequential_number[0], sequential_number[1]))
 
 
-# get's the values from the sequential number in the file, checks an modifies them, return year and number
-def get_values_sequential_number():
-    current_date = datetime.now()
+def get_sequential_number(bill_year):
+    sequential_number = "000"
+    years = read_sequential_number()
+    number_existing = False
+    for year in years:
+        if year[0] == bill_year:
+            number_existing = True
+            sequential_number = year[1]
 
-    try:
-        file_value = read_sequential_number()
-        year, number = file_value.split("-")
+    if not number_existing:
+        sequential_number = "{:03d}".format(0)
+        new_number = [bill_year, sequential_number]
+        years.append(new_number)
 
-        if current_date.year != int(year):
-            year = current_date.year
-            number = 0
-        else:
-            number = int(number)
-
-        sequential_number = "{:d}-{:03d}".format(int(year), number)
-    except ValueError:
-        year = None
-        sequential_number = None
-
-    return year, sequential_number
+    return sequential_number, years
 
 
 # get's the file_name without prefix and file_type
@@ -126,6 +156,15 @@ def check_bill_unpaid(values):
         return "Offen"
     else:
         return "Bezahlt"
+
+
+# get's the last date where the file has been last modified
+def get_path_creation_date(file_path):
+    file_time = time.gmtime(os.path.getmtime(file_path))
+    month = "{:02d}".format(file_time.tm_mon)
+    year = str(file_time.tm_year)
+
+    return year, month
 
 
 # checks if the file name is in the right format

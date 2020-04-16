@@ -5,8 +5,8 @@ log_file_path = "/home/ich/Desktop/Log_file.txt"
 # writes a log to the log file
 def write_log(log):
     # get's the time for the log
-    date_time = datetime.utcnow()
-    time_log = date_time.strftime("%m/%d/%Y, %H:%M:%S")
+    date_time = datetime.now()
+    time_log = date_time.strftime("%d/%m/%Y, %H:%M:%S")
     log_text = "{0}:\t{1}\n".format(time_log, log)
 
     # add's an emtpy line if the Watcher start's new, for the format

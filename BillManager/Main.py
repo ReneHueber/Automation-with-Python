@@ -84,17 +84,20 @@ def handle_bill_move(event):
                                  outgoing_bills_folder, incoming_bills_folder)
             # get's the file name, type an the name without the file type
             file_name, file_type, file_name_without_ending = get_file_name_type(event.src_path)
-            format_okay = BillItem.check_file_name_format(file_name_without_ending)
+            # format_okay = BillItem.check_file_name_format(file_name_without_ending)
+            # TODO check format
+            format_okay = True
             if format_okay:
+                # get's the creation date of the path
                 bill.file_type = file_type
                 # get's the values of the file name
-                bill.set_bill_values(file_name_without_ending)
+                bill.set_bill_values(file_name_without_ending, event.src_path)
 
                 # file name in the right format to extract data
                 bill.file_name = file_name
                 move_bill.create_move_path(bill)
 
-                # get's the bill number for the incoming bill
+                # get's the bill number for the incoming billA
                 if not bill.outgoing:
                     bill.bill_number = RenameBill.get_next_bill_number(bill)
                 # renames the bills in the correct format
@@ -111,7 +114,7 @@ def handle_bill_move(event):
                         move_bill.move_file(event.src_path, bill, "")
                         MoveBill.copy_file(bill, copy_path)
                         # increases the sequential number and writes it to the file
-                        BillItem.write_sequential_number(bill.sequential_number)
+                        BillItem.write_sequential_number(bill.year, bill.sequential_numbers_list)
                     else:
                         move_bill.move_file(event.src_path, bill, "\n")
                     return True

@@ -50,8 +50,8 @@ def rename_file(bill):
         write_log("\tRenamed incoming Bill \"{0}\" to \"{1}\".".format(old_file_name, bill.file_name))
     # renames the outgoing bill
     else:
-        bill.file_name = "{prefix}{month}_{sequel_number}_{company}_{unique}{payment_status}.{type}".format(
-            prefix=bill.bill_prefix, month=bill.month, sequel_number=bill.sequential_number, company=bill.company_name,
-            unique=bill.own_bill_unique, payment_status=add_open, type=bill.file_type)
+        bill.file_name = "{prefix}{month}_{year}-{sequel_number}_{company}_{unique}{payment_status}.{type}".format(
+            prefix=bill.bill_prefix, month=bill.month, year=bill.year, sequel_number=bill.sequential_number,
+            company=bill.company_name, unique=bill.own_bill_unique, payment_status=add_open, type=bill.file_type)
 
         write_log("\tRenamed outgoing Bill \"{0}\" to \"{1}\".".format(old_file_name, bill.file_name))
