@@ -19,7 +19,6 @@ key_log = KeyLog()
 # counts all the keystrokes, but not the key values
 def on_release(key):
     key_log.keystrokes += 1
-    print(key_log.keystrokes)
 
 
 # set's up the database and get's the value for the current day is existing
@@ -56,6 +55,7 @@ def setup_db():
         print("No connection to the database!")
 
 
+# updates the values for the database, every 5 seconds
 def update_db():
     while True:
         conn = DbConnection.create_connection(db_path)
