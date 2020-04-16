@@ -1,7 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 
-db_file_path = '/home/ich/Database/Keylogger/keylogs.db'
+db_file_path = '/home/ich/Database/Keylogger/Test.db'
 
 sql_create_clicks_table = """ CREATE TABLE IF NOT EXISTS clicks (
                                 id integer PRIMARY KEY,
@@ -72,6 +72,7 @@ if conn is not None:
     create_table(conn, sql_create_clicks_table)
 
     with conn:
-        select_values(conn)
+        values = ("2020-04-15", 6000)
+        create_entrance(conn, values)
 else:
     print("Error! cannot create the database connection.")
