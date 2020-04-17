@@ -23,8 +23,15 @@ class MoveBill:
         current_bill.move_path = os.path.join(self.destination_base_folder, current_bill.parent_folder)
         # formats the date for the folder
         formatted_date = "{0}-{1}".format(current_bill.year, current_bill.month)
-        # a list, because 3 folder layer have to be created
-        move_list = [formatted_date, current_bill.company_name, current_bill.payment_status_folder]
+
+        # a list because, there are different formats for the folders
+        if current_bill.outgoing:
+            move_list = [formatted_date, current_bill.company_name, current_bill.payment_status_folder]
+        else:
+            if current_bill.payment_status_folder == "Bezahlt":
+                move_list = [formatted_date, current_bill.company_name]
+            else:
+                move_list = [current_bill.company_name]
 
         # creates and add's the three folder layers
         for folder in move_list:

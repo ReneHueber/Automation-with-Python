@@ -43,9 +43,10 @@ def rename_file(bill):
 
     # renames the incoming bill
     if not bill.outgoing:
-        bill.file_name = "{prefix}{month}_{year}_{company}_{bill_number}{payment_status}.{type}".format(
-            prefix=bill.bill_prefix, month=bill.month, year=bill.year, company=bill.company_name,
-            bill_number=bill.bill_number, payment_status=add_open, type=bill.file_type)
+        if bill.payment_status_folder == "Bezahlt":
+            bill.file_name = "{prefix}{company}_{description}_{day_of_issue}_{bill_number}.{type}".format(
+                prefix=bill.bill_prefix, company=bill.company_name, description=bill.description,
+                day_of_issue=bill.date_of_issue, bill_number=bill.bill_number, type=bill.file_type)
 
         write_log("\tRenamed incoming Bill \"{0}\" to \"{1}\".".format(old_file_name, bill.file_name))
     # renames the outgoing bill
