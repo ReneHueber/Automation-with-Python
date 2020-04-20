@@ -11,6 +11,7 @@ from BillManager import MoveBill
 from BillManager import RenameBill
 
 # if folders or prefix are changed, change them here
+# log file path in the Logs class
 track_folder = "/home/ich/Schreibtisch/Move_Folder"
 destination_base_folder = "/home/ich/Dokumente/Projekte_Andere/Rechnungen"
 json_file_path = "/home/ich/Dokumente/Projekte_Andere/Rechnungen/open_bills.txt"
@@ -86,9 +87,7 @@ def handle_bill_move(event):
                                  open_bills_folder)
             # get's the file name, type an the name without the file type
             file_name, file_type, file_name_without_ending = get_file_name_type(event.src_path)
-            # format_okay = BillItem.check_file_name_format(file_name_without_ending)
-            # TODO check format
-            format_okay = True
+            format_okay = BillItem.check_file_name_format(file_name_without_ending)
             if format_okay:
                 # get's the creation date of the path
                 bill.file_type = file_type
@@ -100,9 +99,8 @@ def handle_bill_move(event):
                 move_bill.create_move_path(bill)
 
                 # get's the bill number for the incoming bill
-                # TODO check if necessary
-                """if not bill.outgoing:
-                    bill.bill_number = RenameBill.get_next_bill_number(bill)"""
+                if not bill.outgoing:
+                    bill.bill_number = RenameBill.get_next_bill_number(bill)
                 # renames the bills in the correct format
                 RenameBill.rename_file(bill)
                 file_name_existing = RenameBill.check_file_name_existing(bill)

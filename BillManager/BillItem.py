@@ -127,8 +127,8 @@ def get_sequential_number(bill_year):
 
 # get's the file_name without prefix and file_type
 # return the number the bill has
-def get_bill_number(file_name):
-    values = file_name.split("_")
+def get_bill_number(file_name, split_char):
+    values = file_name.split(split_char)
     try:
         return int(values[3])
     except IndexError:
@@ -166,25 +166,18 @@ def get_path_creation_date(file_path):
 def check_file_name_format(file_name):
     format_okay = False
     values = file_name.split("-")
-    symbols = ["_", ",", ";", "-"]
 
     try:
-        if len(values) == 4:
-            if check_number(values[0], 1, 12) and check_number(values[1], 0, 99) \
-                    and check_string(values[2], symbols) and values[3] == "o":
-                format_okay = True
+        if len(values) == 2:
+            if check_string(values[0]) and values[1] == "own":
+                return True
         elif len(values) == 3:
-            if check_number(values[0], 1, 12):
-                if check_number(values[1], 0, 99):
-                    if check_string(values[2], symbols):
-                        format_okay = True
-                else:
-                    if check_string(values[1], symbols) and values[2] == "o":
-                        format_okay = True
-        elif len(values) == 2:
-            if check_number(values[0], 1, 12) and check_string(values[1], symbols):
-                format_okay = True
-    except IndexError and ValueError:
+            if check_string(values[0]) and values[1] == "own" and values[2] == "o":
+                return True
+            elif check_string(values[0]) and check_string(values[1]) \
+                    and int(values[2]) and (len(values[2]) == 8):
+                return True
+    except IndexError and TypeError and ValueError:
         format_okay = False
 
     return format_okay
@@ -202,7 +195,9 @@ def check_number(str_number, min_value, max_include_value):
 
 
 # checks if a list of symbols is not in a string
-def check_string(value, symbols):
+def check_string(value):
+    symbols = ["_", ",", ";", "-"]
+
     for symbol in symbols:
         if symbol in value:
             return False
