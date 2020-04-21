@@ -1,5 +1,5 @@
 from datetime import datetime
-log_file_path = "/home/ich/Desktop/Log_file.txt"
+log_file_path = "/home/ich/Schreibtisch/Log_file.txt"
 
 
 # writes a log to the log file

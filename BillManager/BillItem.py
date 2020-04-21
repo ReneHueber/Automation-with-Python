@@ -9,8 +9,8 @@ class Bill:
     file_name = ""
     company_name = ""
     sequential_number = ""
-    month = None
-    year = None
+    month = "00"
+    year = "0000"
     payment_status_folder = ""
     parent_folder = ""
     move_path = ""
@@ -20,19 +20,22 @@ class Bill:
     creation_date = ""
     sequential_numbers_list = []
     description = ""
-    date_of_issue = None
+    date_of_issue = "00010101"
 
     bill_prefix = ""
     own_bill_unique = ""
     outgoing_bills_folder = ""
     incoming_bills_folder = ""
+    open_bills_folder = ""
 
     def __init__(self, bill_prefix, own_bill_unique,
-                 outgoing_bills_folder, incoming_bills_folder):
+                 outgoing_bills_folder, incoming_bills_folder,
+                 open_bills_folder):
         self.bill_prefix = bill_prefix
         self.own_bill_unique = own_bill_unique
         self.outgoing_bills_folder = outgoing_bills_folder
         self.incoming_bills_folder = incoming_bills_folder
+        self.open_bills_folder = open_bills_folder
 
     def set_bill_values(self, file_name, file_path):
         values = file_name.split("-")
@@ -59,13 +62,15 @@ class Bill:
                 self.description = name_values[0]
                 self.date_of_issue = name_values[1]
                 self.parent_folder = self.incoming_bills_folder
+                self.payment_status_folder = "Bezahlt"
                 self.outgoing = False
             # move bill in temporary folder
             else:
                 self.company_name = values[0]
                 self.description = values[1]
                 self.date_of_issue = values[2]
-                self.parent_folder = self.incoming_bills_folder
+                self.parent_folder = self.open_bills_folder
+                self.payment_status_folder = "Offen"
                 self.outgoing = False
 
 
@@ -81,7 +86,7 @@ def is_outgoing_bill(values):
 # read's the current sequential number for the file
 def read_sequential_number():
     sequel_number = []
-    with open("/home/ich/Documents/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "r") as file:
+    with open("/home/ich/Dokumente/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "r") as file:
         for line in file:
             sequel_number.append(line.strip().split("-"))
 
@@ -98,7 +103,7 @@ def write_sequential_number(bill_year, sequential_numbers):
 
     sequential_numbers.sort()
 
-    with open("/home/ich/Documents/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "w") as file:
+    with open("/home/ich/Dokumente/Projekte_Andere/Rechnungen/laufende_Nummer.txt", "w") as file:
         for sequential_number in sequential_numbers:
             file.write("{0}-{1}\n".format(sequential_number[0], sequential_number[1]))
 
@@ -122,8 +127,8 @@ def get_sequential_number(bill_year):
 
 # get's the file_name without prefix and file_type
 # return the number the bill has
-def get_bill_number(file_name):
-    values = file_name.split("_")
+def get_bill_number(file_name, split_char):
+    values = file_name.split(split_char)
     try:
         return int(values[3])
     except IndexError:
@@ -161,25 +166,18 @@ def get_path_creation_date(file_path):
 def check_file_name_format(file_name):
     format_okay = False
     values = file_name.split("-")
-    symbols = ["_", ",", ";", "-"]
 
     try:
-        if len(values) == 4:
-            if check_number(values[0], 1, 12) and check_number(values[1], 0, 99) \
-                    and check_string(values[2], symbols) and values[3] == "o":
-                format_okay = True
+        if len(values) == 2:
+            if check_string(values[0]) and values[1] == "own":
+                return True
         elif len(values) == 3:
-            if check_number(values[0], 1, 12):
-                if check_number(values[1], 0, 99):
-                    if check_string(values[2], symbols):
-                        format_okay = True
-                else:
-                    if check_string(values[1], symbols) and values[2] == "o":
-                        format_okay = True
-        elif len(values) == 2:
-            if check_number(values[0], 1, 12) and check_string(values[1], symbols):
-                format_okay = True
-    except IndexError and ValueError:
+            if check_string(values[0]) and values[1] == "own" and values[2] == "o":
+                return True
+            elif check_string(values[0]) and check_string(values[1]) \
+                    and int(values[2]) and (len(values[2]) == 8):
+                return True
+    except IndexError and TypeError and ValueError:
         format_okay = False
 
     return format_okay
@@ -197,7 +195,9 @@ def check_number(str_number, min_value, max_include_value):
 
 
 # checks if a list of symbols is not in a string
-def check_string(value, symbols):
+def check_string(value):
+    symbols = ["_", ",", ";", "-"]
+
     for symbol in symbols:
         if symbol in value:
             return False

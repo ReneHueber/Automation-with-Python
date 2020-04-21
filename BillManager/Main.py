@@ -11,15 +11,17 @@ from BillManager import MoveBill
 from BillManager import RenameBill
 
 # if folders or prefix are changed, change them here
-track_folder = "/home/ich/Desktop/Move_Folder"
-destination_base_folder = "/home/ich/Documents/Projekte_Andere/Rechnungen"
-json_file_path = "/home/ich/Documents/Projekte_Andere/Rechnungen/open_bills.txt"
-log_file_path = "/home/ich/Desktop/Log_file.txt"
+# log file path in the Logs class
+track_folder = "/home/ich/Schreibtisch/Move_Folder"
+destination_base_folder = "/home/ich/Dokumente/Projekte_Andere/Rechnungen"
+json_file_path = "/home/ich/Dokumente/Projekte_Andere/Rechnungen/open_bills.txt"
+log_file_path = "/home/ich/Schreibtisch/Log_file.txt"
 bill_prefix = "Rechnung-"
 own_bill_unique = "Sonnenseite"
 outgoing_bills_folder = "Rechnungen_von_Mir"
 incoming_bills_folder = "Rechnungen_an_Mich"
-copy_path = "/home/ich/Desktop/Rechnungen_senden"
+open_bills_folder = "Offene_Rechnungen"
+copy_path = "/home/ich/Schreibtisch/Rechnungen_senden"
 
 moved_src_path = ""
 
@@ -81,12 +83,11 @@ def handle_bill_move(event):
         # if it file is complete it can be moved
         if start_move:
             bill = BillItem.Bill(bill_prefix, own_bill_unique,
-                                 outgoing_bills_folder, incoming_bills_folder)
+                                 outgoing_bills_folder, incoming_bills_folder,
+                                 open_bills_folder)
             # get's the file name, type an the name without the file type
             file_name, file_type, file_name_without_ending = get_file_name_type(event.src_path)
-            # format_okay = BillItem.check_file_name_format(file_name_without_ending)
-            # TODO check format
-            format_okay = True
+            format_okay = BillItem.check_file_name_format(file_name_without_ending)
             if format_okay:
                 # get's the creation date of the path
                 bill.file_type = file_type
@@ -97,7 +98,7 @@ def handle_bill_move(event):
                 bill.file_name = file_name
                 move_bill.create_move_path(bill)
 
-                # get's the bill number for the incoming billA
+                # get's the bill number for the incoming bill
                 if not bill.outgoing:
                     bill.bill_number = RenameBill.get_next_bill_number(bill)
                 # renames the bills in the correct format

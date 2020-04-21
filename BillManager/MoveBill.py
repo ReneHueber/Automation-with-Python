@@ -12,10 +12,11 @@ class MoveBill:
     # moves the file to the right destination
     def move_file(self, src_path, current_bill, new_line):
         os.rename(src_path, current_bill.move_path)
+        # get's the path without the file name
+        move_path = current_bill.move_path.split(self.destination_base_folder + "/")[1]
+        move_path = move_path.split("/" + current_bill.file_name)[0]
         write_log("Moved \"{0}\" to \"{1}\".{2}".format(current_bill.file_name,
-                                                        current_bill.move_path.split(
-                                                            self.destination_base_folder + "/")[1],
-                                                        new_line))
+                                                        move_path, new_line))
 
     # creates the path to move the file in the right folder
     def create_move_path(self, current_bill):
@@ -23,8 +24,15 @@ class MoveBill:
         current_bill.move_path = os.path.join(self.destination_base_folder, current_bill.parent_folder)
         # formats the date for the folder
         formatted_date = "{0}-{1}".format(current_bill.year, current_bill.month)
-        # a list, because 3 folder layer have to be created
-        move_list = [formatted_date, current_bill.company_name, current_bill.payment_status_folder]
+
+        # a list because, there are different formats for the folders
+        if current_bill.outgoing:
+            move_list = [formatted_date, current_bill.company_name, current_bill.payment_status_folder]
+        else:
+            if current_bill.payment_status_folder == "Bezahlt":
+                move_list = [formatted_date, current_bill.company_name]
+            else:
+                move_list = [current_bill.company_name]
 
         # creates and add's the three folder layers
         for folder in move_list:
